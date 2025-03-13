@@ -45,33 +45,55 @@ def write_to_target_sheet(df, service):
     try:
         target_spreadsheet_id = '1FEqiDqqPfb9YHAWBiqVepmmXj22zNqXNNI7NLGCDVak'
         
-        # Clean the DataFrame by replacing NaN with empty strings
-        df_clean = df.fillna('')
+        # Clean the DataFrame by replacing NaN with empty strings and convert to list
+        df_clean = df.copy()
+        df_clean = df_clean.fillna('')
         
-        # Convert numeric columns to rounded strings
+        # Convert numeric columns to formatted strings
         numeric_columns = ['Context Awareness', 'Autonomy', 'Experience', 
                          'Output Quality', 'Overall Rating', 'Mean Rating', 'Difference']
         for col in numeric_columns:
-            df_clean[col] = df_clean[col].apply(lambda x: f"{x:.2f}" if x != '' else '')
+            df_clean[col] = df_clean[col].apply(lambda x: f"{float(x):.2f}" if x != '' else '')
         
-        # Prepare data for writing
+        # Convert DataFrame to list of lists
         headers = df_clean.columns.tolist()
-        values = [headers] + df_clean.values.tolist()
+        data_rows = df_clean.values.tolist()
+        values = [headers] + data_rows
         
-        # Write data
+        # Write data with USER_ENTERED option
         body = {
-            'values': values
+            'values': values,
+            'majorDimension': 'ROWS'
         }
         result = service.spreadsheets().values().update(
             spreadsheetId=target_spreadsheet_id,
             range='Sheet1!A1',
-            valueInputOption='RAW',
+            valueInputOption='USER_ENTERED',
             body=body
         ).execute()
         
-        # Apply conditional formatting for Result column
+        # Clear existing conditional formatting
+        clear_format_request = {
+            'requests': [{
+                'deleteConditionalFormatRule': {
+                    'sheetId': 0,
+                    'index': 0
+                }
+            }]
+        }
+        
+        try:
+            service.spreadsheets().batchUpdate(
+                spreadsheetId=target_spreadsheet_id,
+                body=clear_format_request
+            ).execute()
+        except Exception:
+            # Ignore if no existing rules to delete
+            pass
+        
+        # Apply new conditional formatting
         result_column_index = headers.index('Result')
-        requests = [{
+        format_requests = [{
             'addConditionalFormatRule': {
                 'rule': {
                     'ranges': [{
@@ -115,11 +137,12 @@ def write_to_target_sheet(df, service):
         
         service.spreadsheets().batchUpdate(
             spreadsheetId=target_spreadsheet_id,
-            body={'requests': requests}
+            body={'requests': format_requests}
         ).execute()
         
         LOGGER.info("Data written to target sheet successfully")
         return True
+        
     except Exception as error:
         LOGGER.error("Error writing to target sheet: %s", str(error))
         return False
@@ -227,6 +250,15 @@ def get_google_sheet_data():
         ]
         
         filtered_df = filtered_df[final_columns]
+        
+        # Log DataFrame information before writing to target sheet
+        LOGGER.info("\n=== DataFrame Summary Before Writing to Target Sheet ===")
+        LOGGER.info("DataFrame Shape: %s rows, %s columns", filtered_df.shape[0], filtered_df.shape[1])
+        LOGGER.info("Columns: %s", filtered_df.columns.tolist())
+        LOGGER.info("Sample Data (first 3 rows):\n%s", filtered_df.head(3).to_string())
+        LOGGER.info("Value Counts for Result column:\n%s", filtered_df['Result'].value_counts().to_string())
+        LOGGER.info("Missing Values Summary:\n%s", filtered_df.isnull().sum().to_string())
+        LOGGER.info("=== End of DataFrame Summary ===\n")
         
         # Clear target sheet and get service
         service = clear_target_sheet()
