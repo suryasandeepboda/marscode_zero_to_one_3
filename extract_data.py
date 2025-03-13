@@ -118,13 +118,10 @@ def write_to_target_sheet(df, service):
 def get_google_sheet_data():
     """
     Retrieves and processes data from a Google Sheet.
-    
-    Returns:
-        pandas.DataFrame: Processed data from the sheet, or None if an error occurs
     """
     try:
-        # Define the scope and credentials
-        scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+        # Update scopes to include write permission
+        scopes = ['https://www.googleapis.com/auth/spreadsheets']  # Changed from readonly
         creds = Credentials.from_service_account_file('credentials.json', scopes=scopes)
         LOGGER.info("Successfully loaded credentials")
 
@@ -222,6 +219,19 @@ def get_google_sheet_data():
         
         filtered_df = filtered_df[final_columns]
         
+        # Clear target sheet and get service
+        service = clear_target_sheet()
+        if service is None:
+            LOGGER.error("Failed to clear target sheet")
+            return None
+            
+        # Write to target sheet
+        success = write_to_target_sheet(filtered_df, service)
+        if not success:
+            LOGGER.error("Failed to write to target sheet")
+            return None
+        
+        LOGGER.info("Data successfully written to target sheet")
         return filtered_df
 
     except Exception as error:
@@ -231,15 +241,11 @@ def get_google_sheet_data():
 if __name__ == "__main__":
     result_data = get_google_sheet_data()
     if result_data is not None:
-        LOGGER.info("Data retrieval successful")
-        print("\nFirst 5 rows of retrieved data:")
-        pd.set_option('display.max_columns', None)  # Show all columns
-        print(result_data.head())
-        
-        # Print summary statistics
+        LOGGER.info("Data processing and transfer successful")
+        print("\nData has been successfully processed and written to the target sheet")
         print("\nSummary Statistics:")
         print(f"Total Records: {len(result_data)}")
         print(f"Ok Results: {len(result_data[result_data['Result'] == 'Ok'])}")
         print(f"Not Ok Results: {len(result_data[result_data['Result'] == 'Not ok'])}")
     else:
-        LOGGER.error("Failed to retrieve data")
+        LOGGER.error("Failed to process and transfer data")
