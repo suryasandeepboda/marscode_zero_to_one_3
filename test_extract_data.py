@@ -95,7 +95,7 @@ class TestGoogleSheetExtraction(unittest.TestCase):
     @patch('extract_data.build')
     def test_invalid_ratings(self, mock_build, mock_credentials):
         """Test handling of invalid rating values"""
-        mock_data = self.mock_data.copy()
+        mock_data = [row[:] for row in self.mock_data]  # Deep copy
         mock_data[1][3] = 'invalid'  # Invalid Context Awareness rating
         
         mock_service = MagicMock()
@@ -106,20 +106,18 @@ class TestGoogleSheetExtraction(unittest.TestCase):
 
         result = get_google_sheet_data()
         self.assertIsNotNone(result)
+        # Check if the mean rating is NaN when one of the inputs is invalid
         self.assertTrue(pd.isna(result['Mean Rating'].iloc[0]))
 
     def test_result_status_calculation(self):
         """Test result status determination"""
-        test_data = pd.DataFrame({
-            'Difference': [-2, -0.5, 0, 0.5, 2]
-        })
-        
+        test_differences = [-2, -0.5, 0, 0.5, 2]
         expected_results = ['Not ok', 'Ok', 'Ok', 'Ok', 'Not ok']
-        for diff, expected in zip(test_data['Difference'], expected_results):
-            result = test_data['Difference'].apply(
-                lambda x: 'Ok' if -1 <= x <= 1 else 'Not ok'
-            )
-            self.assertEqual(result.iloc[0], expected)
+        
+        for diff, expected in zip(test_differences, expected_results):
+            with self.subTest(difference=diff):
+                result = 'Ok' if -1 <= diff <= 1 else 'Not ok'
+                self.assertEqual(result, expected)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
