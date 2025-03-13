@@ -1,0 +1,17 @@
+[MASTER]
+disable=
+    C0111, # missing-docstring
+    C0103, # invalid-name
+    W0621, # redefined-outer-name
+
+[FORMAT]
+max-line-length=100
+
+[MESSAGES CONTROL]
+disable=
+    logging-fstring-interpolation,
+    broad-except
+
+[REPORTS]
+output-format=text
+reports=yes
