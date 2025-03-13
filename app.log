@@ -1,0 +1,14 @@
+2025-03-13 17:52:51,528 - INFO - Successfully loaded credentials
+2025-03-13 17:52:51,529 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-03-13 17:52:51,531 - INFO - Successfully created Google Sheets service
+2025-03-13 17:52:54,400 - INFO - Retrieved 144 rows of data
+2025-03-13 17:52:54,402 - WARNING - Column 'Tool Used' not found in sheet
+2025-03-13 17:52:54,402 - WARNING - Column 'Feature' not found in sheet
+2025-03-13 17:52:54,402 - WARNING - Column 'Context Awareness Rating' not found in sheet
+2025-03-13 17:52:54,403 - WARNING - Column 'Autonomy Rating' not found in sheet
+2025-03-13 17:52:54,403 - WARNING - Column 'Experience Rating' not found in sheet
+2025-03-13 17:52:54,403 - WARNING - Column 'Output Quality Rating' not found in sheet
+2025-03-13 17:52:54,403 - WARNING - Column 'Overall Satisfaction' not found in sheet
+2025-03-13 17:52:54,403 - WARNING - Column 'POD' not found in sheet
+2025-03-13 17:52:54,405 - INFO - Successfully filtered required columns
+2025-03-13 17:52:54,405 - INFO - Data retrieval successful
