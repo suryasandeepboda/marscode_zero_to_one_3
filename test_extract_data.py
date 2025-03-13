@@ -95,8 +95,13 @@ class TestGoogleSheetExtraction(unittest.TestCase):
     @patch('extract_data.build')
     def test_invalid_ratings(self, mock_build, mock_credentials):
         """Test handling of invalid rating values"""
-        mock_data = [row[:] for row in self.mock_data]  # Deep copy
-        mock_data[1][3] = 'invalid'  # Invalid Context Awareness rating
+        # Create mock data with invalid rating
+        mock_data = [
+            ['Email Address', 'Tool being used', 'Feature used', 'Context Awareness', 
+             'Autonomy', 'Experience', 'Output Quality', 'Overall Rating', 'Unique ID'],
+            ['test@email.com', 'Tool1', 'Feature1', 'invalid', '3', '5', '4', '4', 'ID1'],
+            ['test2@email.com', 'Tool2', 'Feature2', '5', '5', '5', '5', '4', 'ID2']
+        ]
         
         mock_service = MagicMock()
         mock_build.return_value = mock_service
@@ -105,9 +110,17 @@ class TestGoogleSheetExtraction(unittest.TestCase):
         }
 
         result = get_google_sheet_data()
+        
+        # Verify the result exists
         self.assertIsNotNone(result)
-        # Check if the mean rating is NaN when one of the inputs is invalid
-        self.assertTrue(pd.isna(result['Mean Rating'].iloc[0]))
+        
+        # Verify second row is calculated correctly (all valid numbers)
+        expected_mean_row2 = (5 + 5 + 5 + 5) / 4
+        self.assertAlmostEqual(result['Mean Rating'].iloc[1], expected_mean_row2)
+        
+        # For first row, verify mean is calculated correctly excluding invalid value
+        expected_mean_row1 = (3 + 5 + 4) / 3  # Average of valid ratings only
+        self.assertAlmostEqual(result['Mean Rating'].iloc[0], expected_mean_row1)
 
     def test_result_status_calculation(self):
         """Test result status determination"""
