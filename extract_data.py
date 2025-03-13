@@ -45,9 +45,18 @@ def write_to_target_sheet(df, service):
     try:
         target_spreadsheet_id = '1FEqiDqqPfb9YHAWBiqVepmmXj22zNqXNNI7NLGCDVak'
         
+        # Clean the DataFrame by replacing NaN with empty strings
+        df_clean = df.fillna('')
+        
+        # Convert numeric columns to rounded strings
+        numeric_columns = ['Context Awareness', 'Autonomy', 'Experience', 
+                         'Output Quality', 'Overall Rating', 'Mean Rating', 'Difference']
+        for col in numeric_columns:
+            df_clean[col] = df_clean[col].apply(lambda x: f"{x:.2f}" if x != '' else '')
+        
         # Prepare data for writing
-        headers = df.columns.tolist()
-        values = [headers] + df.values.tolist()
+        headers = df_clean.columns.tolist()
+        values = [headers] + df_clean.values.tolist()
         
         # Write data
         body = {
