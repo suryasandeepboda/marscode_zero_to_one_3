@@ -19,6 +19,102 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger(__name__)
 
+def clear_target_sheet():
+    """Clear the target spreadsheet"""
+    try:
+        scopes = ['https://www.googleapis.com/auth/spreadsheets']
+        creds = Credentials.from_service_account_file('credentials.json', scopes=scopes)
+        service = build('sheets', 'v4', credentials=creds)
+        
+        target_spreadsheet_id = '1FEqiDqqPfb9YHAWBiqVepmmXj22zNqXNNI7NLGCDVak'
+        range_name = 'Sheet1!A:Z'  # Clear all columns
+        
+        clear_request = service.spreadsheets().values().clear(
+            spreadsheetId=target_spreadsheet_id,
+            range=range_name
+        )
+        clear_request.execute()
+        LOGGER.info("Target sheet cleared successfully")
+        return service
+    except Exception as error:
+        LOGGER.error("Error clearing target sheet: %s", str(error))
+        return None
+
+def write_to_target_sheet(df, service):
+    """Write data to target sheet with formatting"""
+    try:
+        target_spreadsheet_id = '1FEqiDqqPfb9YHAWBiqVepmmXj22zNqXNNI7NLGCDVak'
+        
+        # Prepare data for writing
+        headers = df.columns.tolist()
+        values = [headers] + df.values.tolist()
+        
+        # Write data
+        body = {
+            'values': values
+        }
+        result = service.spreadsheets().values().update(
+            spreadsheetId=target_spreadsheet_id,
+            range='Sheet1!A1',
+            valueInputOption='RAW',
+            body=body
+        ).execute()
+        
+        # Apply conditional formatting for Result column
+        result_column_index = headers.index('Result')
+        requests = [{
+            'addConditionalFormatRule': {
+                'rule': {
+                    'ranges': [{
+                        'sheetId': 0,
+                        'startRowIndex': 1,
+                        'startColumnIndex': result_column_index,
+                        'endColumnIndex': result_column_index + 1
+                    }],
+                    'booleanRule': {
+                        'condition': {
+                            'type': 'TEXT_EQ',
+                            'values': [{'userEnteredValue': 'Ok'}]
+                        },
+                        'format': {
+                            'backgroundColor': {'red': 0.0, 'green': 1.0, 'blue': 0.0}
+                        }
+                    }
+                }
+            }
+        }, {
+            'addConditionalFormatRule': {
+                'rule': {
+                    'ranges': [{
+                        'sheetId': 0,
+                        'startRowIndex': 1,
+                        'startColumnIndex': result_column_index,
+                        'endColumnIndex': result_column_index + 1
+                    }],
+                    'booleanRule': {
+                        'condition': {
+                            'type': 'TEXT_EQ',
+                            'values': [{'userEnteredValue': 'Not ok'}]
+                        },
+                        'format': {
+                            'backgroundColor': {'red': 1.0, 'green': 0.0, 'blue': 0.0}
+                        }
+                    }
+                }
+            }
+        }]
+        
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=target_spreadsheet_id,
+            body={'requests': requests}
+        ).execute()
+        
+        LOGGER.info("Data written to target sheet successfully")
+        return True
+    except Exception as error:
+        LOGGER.error("Error writing to target sheet: %s", str(error))
+        return False
+
 def get_google_sheet_data():
     """
     Retrieves and processes data from a Google Sheet.
